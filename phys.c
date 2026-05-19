@@ -12,9 +12,9 @@ SDL_Surface* surface;
 //Define scales of w and h
 #define WIDTH 1920//Keeping these next 4 in ratios of each other is ideal!
 #define HEIGHT 1080
-#define WWIDTH 48
-#define WHEIGHT 27
-#define framerate 60 //Keeps the program from overexerting itself.
+#define WWIDTH 96
+#define WHEIGHT 54
+#define framerate 240 //Keeps the program from overexerting itself, and also defines physics frames.
 //Structures
 struct v2d {
   long double x;
@@ -50,6 +50,8 @@ void move(struct box *b);
 //Global Vars
 long double XSCALE;
 long double YSCALE;
+int coll;
+bool quit;
 
 
 void drawBox(struct box *target){
@@ -90,18 +92,17 @@ int main() {
   //Base box
   struct box base;
   base.mass = 1;
-  base.position.x = (WWIDTH/2)-10; base.position.y = WHEIGHT/2;
+  base.position.x = (WWIDTH/2)-5; base.position.y = WHEIGHT/2;
   base.size.x = 1.0;     base.size.y = 1.0;
   base.velocity.x = 0.0; base.velocity.y = 0.0;
 
   //Incoming box
   struct box initial;
-  initial.mass = 1;
+  initial.mass = 10000;
   initial.position.x = WWIDTH/2; initial.position.y = WHEIGHT/2;
-  initial.size.x = 2.0;     initial.size.y = 2.0;
-  initial.velocity.x = -1.0; initial.velocity.y = 0.0;
-
-  bool quit = false;
+  initial.size.x = 1.5;     initial.size.y = 1.5;
+  initial.velocity.x = -5.0; initial.velocity.y = 0.0;
+  quit = false;
   time_t ep;
   int frame = 0;
   time(&ep);//SoF
@@ -124,17 +125,18 @@ int main() {
     SDL_UpdateWindowSurface(window);
     SDL_Delay(round((1000/framerate)));
     frame++;//Increment frame counter;
-    printf("Finished frame %i\n",frame);
+    // printf("Finished frame %i\n",frame);
     //Physics simulation START
     step(&base,&initial);
   }
   SDL_DestroyWindow(window);
   SDL_Quit();
+  printf("Finished! %i collisions",coll);
 }
 double distance(struct v2d *pos1, struct v2d *pos2){
   //Pythagorean Theorum.
-  const double dx = abs(pos1->x-pos2->x);
-  const double dy = abs(pos1->y-pos2->y);
+  const double dx = fabs(pos1->x-pos2->x);
+  const double dy = fabs(pos1->y-pos2->y);
   return (sqrt((dx*dx)+(dy*dy)));
 }
 void renderUnitGrid(){
@@ -170,19 +172,33 @@ struct v2di snap(struct v2d *mes){
   return re;
 }
 
-void step(struct box *box1,struct box *box2){//Calculates one frame && maybe physics frame
+void step(struct box *box1, struct box *box2){
+  //Step 1: See if any collisions need to be made -- radial cast.
+  if(distance(&(box1->position),&(box2->position)) <= box1->size.x+box2->size.x){
+    //Elastic collision: exchange velocities based on mass
+    const double v1 = box1->velocity.x;
+    const double v2 = box2->velocity.x;
+    const int m1 = box1->mass;
+    const int m2 = box2->mass;
+    
+    //Elastic collision formulas
+    box1->velocity.x = ((m1 - m2) * v1 + 2 * m2 * v2) / (m1 + m2);
+    box2->velocity.x = ((m2 - m1) * v2 + 2 * m1 * v1) / (m1 + m2);
+    coll++;
+  }
   move(box1);
   move(box2);
-  //Step 1: See if any collisions need to be made -- radial cast.
-  if(distance(&(box1->position),&(box2->position)) <= box1->size.x+box1->size.y){
-    //On collision, transfer 1u of momentum.
-    const double momentum = box2
+  if(box1->velocity.x >= 0 && box1->velocity.x < box2->velocity.x && box2->velocity.x >= 0){//win condition
+    quit = true;
   }
-
 }
 void move(struct box *b){
   const long double xscaled = (b->velocity.x)/(long double)framerate;
   const long double yscaled = (b->velocity.y)/(long double)framerate;
   b->position.x += xscaled;
   b->position.y += yscaled;
+  if(b->position.x-b->size.x < 0){//bounce off the left side of the screen.
+    b->velocity.x = -(b->velocity.x);
+    coll++;
+  }
 }
