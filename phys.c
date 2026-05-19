@@ -10,14 +10,14 @@ SDL_Window* window;
 SDL_Surface* surface;
 
 //Definitons. read the readme please.
-#define WIDTH 1920 //Keeping these next 4 in ratios of each other is ideal!
-#define HEIGHT 1080
-#define WWIDTH 96
-#define WHEIGHT 54 
-#define RENDER_FRAMERATE 60 //Visual framerate
-#define PHYSICS_SUBSTEPS 50 //Physics steps per render frame, increase for higher mass ratios
-#define DIGITS 1
-#define SPEED 5
+#define WIDTH 1920 //Keeping these next 4 in ratios of each other is ideal! (20s=w)
+#define HEIGHT 200
+#define WWIDTH 192
+#define WHEIGHT 20
+#define RENDER_FRAMERATE 60
+#define PHYSICS_SUBSTEPS 5000
+#define DIGITS 6
+#define SPEED 3
 #define RENDERGRID 1
 //Structures
 struct v2d {
@@ -33,7 +33,7 @@ struct box{
   struct v2d velocity;//Stored as workplace units / second
   struct v2d position;//stored as workplace units
   struct v2d size;//stored as workplace units
-  int mass;// stored as kilograms
+   long int mass;// stored as kilograms
 };
 
 uint32_t* pixels;
@@ -44,9 +44,6 @@ void pixel(int x, int y, uint32_t color);
 uint32_t rgb(uint8_t r, uint8_t g, uint8_t b);
 void renderUnitGrid();
 
-//Struct functions
-struct v2di snap(struct v2d *mes);
-
 //Movement and physics functions
 void step(struct box *box1, struct box *box2);//Physics collider
 void move(struct box *b);
@@ -56,6 +53,8 @@ long double XSCALE;
 long double YSCALE;
 int coll;
 bool quit;
+
+int frame;int done;
 
 
 void drawBox(struct box *target){
@@ -96,20 +95,21 @@ int main() {
   //Base box
   struct box base;
   base.mass = 1;
-  base.position.x = (WWIDTH/2)-5; base.position.y = WHEIGHT/2;
+  base.position.x = 30;  base.position.y = WHEIGHT-1;
   base.size.x = 1.0;     base.size.y = 1.0;
   base.velocity.x = 0.0; base.velocity.y = 0.0;
 
   //Incoming box
   struct box initial;
-  const int setMass = pow(100,(DIGITS-1));
-  printf("Using block mass: %i\n",setMass);
+  const  long int setMass = pow(100,(DIGITS-1));
+  printf("Using block mass: %lukg\n",setMass);
+
   initial.mass = setMass;
-  initial.position.x = WWIDTH/2; initial.position.y = (WHEIGHT/2)-0.5;
-  initial.size.x = 1.5;     initial.size.y = 1.5;
+  initial.position.x = 40;     initial.position.y = WHEIGHT-1.5;
+  initial.size.x = 1.5;        initial.size.y = 1.5;
   initial.velocity.x = -SPEED; initial.velocity.y = 0.0;
   quit = false;
-  int frame = 0;
+  frame = 0;done = 0;
   SDL_Event e;
   while (!quit) {
     while (SDL_PollEvent(&e)) {
@@ -133,6 +133,9 @@ int main() {
     //Physics simulation START
     for(int substep = 0; substep < PHYSICS_SUBSTEPS; substep++){
       step(&base,&initial);
+    }
+    if(done > 0 && done + (RENDER_FRAMERATE) <= frame){
+      quit = true;
     }
   }
   SDL_DestroyWindow(window);
@@ -171,21 +174,14 @@ struct v2di pixl(long double x, long double y){
   return loc;
 };
 
-struct v2di snap(struct v2d *mes){
-  struct v2di re;
-  re.x = (int)mes->x;
-  re.y = (int)mes->y;
-  return re;
-}
-
 void step(struct box *box1, struct box *box2){
   //Step 1: See if any collisions need to be made -- radial cast.
   if(distance(&(box1->position),&(box2->position)) <= box1->size.x+box2->size.x){
     //Elastic collision: exchange velocities based on mass
-    const double v1 = box1->velocity.x;
-    const double v2 = box2->velocity.x;
-    const int m1 = box1->mass;
-    const int m2 = box2->mass;
+    const long double v1 = box1->velocity.x;
+    const long double v2 = box2->velocity.x;
+    const long int m1 = box1->mass;
+    const long int m2 = box2->mass;
     
     //Elastic collision formulas
     box1->velocity.x = ((m1 - m2) * v1 + 2 * m2 * v2) / (m1 + m2);
@@ -194,8 +190,9 @@ void step(struct box *box1, struct box *box2){
   }
   move(box1);
   move(box2);
-  if(box1->velocity.x >= 0 && box1->velocity.x < box2->velocity.x && box2->velocity.x >= 0){//win condition
-    quit = true;
+  if(box1->velocity.x >= 0 && box1->velocity.x < box2->velocity.x && box2->velocity.x >= 0 && done == 0){//win condition
+    done = frame;
+    printf("Reached final conditon, stopping in 1sec...\n");
   }
 }
 void move(struct box *b){
