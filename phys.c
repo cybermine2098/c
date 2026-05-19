@@ -14,7 +14,8 @@ SDL_Surface* surface;
 #define HEIGHT 1080
 #define WWIDTH 96
 #define WHEIGHT 54
-#define framerate 240 //Keeps the program from overexerting itself, and also defines physics frames.
+#define RENDER_FRAMERATE 60 //Visual framerate
+#define PHYSICS_SUBSTEPS 50 //Physics steps per render frame - increase for higher mass ratios
 //Structures
 struct v2d {
   long double x;
@@ -98,7 +99,7 @@ int main() {
 
   //Incoming box
   struct box initial;
-  initial.mass = 10000;
+  initial.mass = 1000000;
   initial.position.x = WWIDTH/2; initial.position.y = WHEIGHT/2;
   initial.size.x = 1.5;     initial.size.y = 1.5;
   initial.velocity.x = -5.0; initial.velocity.y = 0.0;
@@ -116,18 +117,20 @@ int main() {
     if (SDL_LockSurface(surface) == 0) {
       memset(pixels, 0, sizeof(uint32_t) * WIDTH * HEIGHT);
       //render START
-      renderUnitGrid();
+      //renderUnitGrid();
       drawBox(&base);
       drawBox(&initial);
       //RENDER END
       SDL_UnlockSurface(surface);
     }
     SDL_UpdateWindowSurface(window);
-    SDL_Delay(round((1000/framerate)));
+    SDL_Delay(round((1000.0/RENDER_FRAMERATE)));
     frame++;//Increment frame counter;
     // printf("Finished frame %i\n",frame);
     //Physics simulation START
-    step(&base,&initial);
+    for(int substep = 0; substep < PHYSICS_SUBSTEPS; substep++){
+      step(&base,&initial);
+    }
   }
   SDL_DestroyWindow(window);
   SDL_Quit();
@@ -193,11 +196,12 @@ void step(struct box *box1, struct box *box2){
   }
 }
 void move(struct box *b){
-  const long double xscaled = (b->velocity.x)/(long double)framerate;
-  const long double yscaled = (b->velocity.y)/(long double)framerate;
+  const long double physics_fps = (long double)RENDER_FRAMERATE * PHYSICS_SUBSTEPS;
+  const long double xscaled = (b->velocity.x)/physics_fps;
+  const long double yscaled = (b->velocity.y)/physics_fps;
   b->position.x += xscaled;
   b->position.y += yscaled;
-  if(b->position.x-b->size.x < 0){//bounce off the left side of the screen.
+  if(b->position.x-b->size.x <= 0){//bounce off the left side of the screen.
     b->velocity.x = -(b->velocity.x);
     coll++;
   }
