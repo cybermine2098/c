@@ -9,13 +9,16 @@
 SDL_Window* window;
 SDL_Surface* surface;
 
-//Define scales of w and h
-#define WIDTH 1920//Keeping these next 4 in ratios of each other is ideal!
+//Definitons. read the readme please.
+#define WIDTH 1920 //Keeping these next 4 in ratios of each other is ideal!
 #define HEIGHT 1080
 #define WWIDTH 96
-#define WHEIGHT 54
+#define WHEIGHT 54 
 #define RENDER_FRAMERATE 60 //Visual framerate
-#define PHYSICS_SUBSTEPS 50 //Physics steps per render frame - increase for higher mass ratios
+#define PHYSICS_SUBSTEPS 50 //Physics steps per render frame, increase for higher mass ratios
+#define DIGITS 1
+#define SPEED 5
+#define RENDERGRID 1
 //Structures
 struct v2d {
   long double x;
@@ -99,14 +102,14 @@ int main() {
 
   //Incoming box
   struct box initial;
-  initial.mass = 1000000;
-  initial.position.x = WWIDTH/2; initial.position.y = WHEIGHT/2;
+  const int setMass = pow(100,(DIGITS-1));
+  printf("Using block mass: %i\n",setMass);
+  initial.mass = setMass;
+  initial.position.x = WWIDTH/2; initial.position.y = (WHEIGHT/2)-0.5;
   initial.size.x = 1.5;     initial.size.y = 1.5;
-  initial.velocity.x = -5.0; initial.velocity.y = 0.0;
+  initial.velocity.x = -SPEED; initial.velocity.y = 0.0;
   quit = false;
-  time_t ep;
   int frame = 0;
-  time(&ep);//SoF
   SDL_Event e;
   while (!quit) {
     while (SDL_PollEvent(&e)) {
@@ -117,7 +120,7 @@ int main() {
     if (SDL_LockSurface(surface) == 0) {
       memset(pixels, 0, sizeof(uint32_t) * WIDTH * HEIGHT);
       //render START
-      //renderUnitGrid();
+      RENDERGRID ? renderUnitGrid() : 0;
       drawBox(&base);
       drawBox(&initial);
       //RENDER END
