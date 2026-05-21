@@ -4,6 +4,16 @@ I wouldn't reccomend looking at it too hard since I am an amateur when it comes 
 ## Purpose
 As outlined in [this](https://www.youtube.com/watch?v=6dTyOl1fmDo) 3blue1brown video: you can compute increasing digits of pi using colliding blocks. I've built an interactive simulation capable of doing this. 
 
+This was an originally unsolved problem, but this reddit thread actually clears up why this happens:
+
+**[Explanation like I'm five](https://www.reddit.com/r/explainlikeimfive/comments/177gm48/comment/k4w3705/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button)**
+
+This comment describes how the behaviour is caused by the fact that this system emulates a wave, and waves are inherently 'circular' in their nature. This system also has a frequency and an oscillation creating a wave that can be defined by it's properties of collisions.
+
+**[Other simpler explanation](https://www.reddit.com/r/explainlikeimfive/comments/177gm48/comment/k4ta3ec/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button)**
+
+This comment details that this system depends on the pythagorean theorum, one that can be used to re-build Pi using it's source. This is a fundamental principle of our euclidian reality and it helps explain why this happens.
+
 ## Included files
 - **shell.nix** -- I use nixos and this is critical for ANYTHING to EVER work on this godforsaken operating system.
 - **compile.sh** -- A simple bash script to help me speed compiling and executing up. 
