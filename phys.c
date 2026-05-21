@@ -130,22 +130,23 @@ int main() {
 }
 //Helper function to set all the global variables.
 void setAttributes(){
-  FILE *fptr;
-  fptr = fopen("config.txt", "r"); 
+  FILE *fptr;//Create a file pointer
+  fptr = fopen("config.txt", "r");//Open the config in read-only mode
   if(fptr != NULL) {
     char currentLine[50];//Create a current line variable.
-    while(fgets(currentLine,50,fptr)){
-      char key[50];char value[50];
-      int keyIdx = 0;int valueIdx = 0;int idx = 0;
-      while(currentLine[idx] != '=' && currentLine[idx] != '\0'){
+    while(fgets(currentLine,50,fptr)){//While there exists data to read,
+      char key[50];char value[50];//Keep a key and a value. This will be used later.
+      int keyIdx = 0;int valueIdx = 0;int idx = 0;//Indexing variables.
+      while(currentLine[idx] != '=' && currentLine[idx] != '\0'){//Read the current line and count lengths of the key and value.
         key[keyIdx++] = currentLine[idx++];
       }
-      key[keyIdx] = '\0';
-      if(currentLine[idx] == '=') idx++;
+      key[keyIdx] = '\0';//Set the key to null;
+      if(currentLine[idx] == '=') idx++;//If there is no value, keep going.
       while(idx < 50 && currentLine[idx] != '\n' && currentLine[idx] != '\0'){
-        value[valueIdx++] = currentLine[idx++];
+        value[valueIdx++] = currentLine[idx++];//Similar to original line, but this time actually read the value
       }
       value[valueIdx] = '\0';
+      //Now check each case and assign a variable.
       if(strcmp(key, "WIDTH") == 0) WIDTH = atoi(value);
       else if(strcmp(key, "HEIGHT") == 0) HEIGHT = atoi(value);
       else if(strcmp(key, "WWIDTH") == 0) WWIDTH = atoi(value);
