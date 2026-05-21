@@ -13,7 +13,7 @@ As outlined in [this](https://www.youtube.com/watch?v=6dTyOl1fmDo) 3blue1brown v
 ## How to use
 
 ### Definitions:
-At the top of the file there are many `#define` attributes, this is what they all do
+In the config file (`config.txt`) there are many attributes, this is what they all do
 - **HEIGHT**: Defines the window height
 - **WIDTH**: Defines the window width
 - **WWIDTH**: Defines the workspace Width

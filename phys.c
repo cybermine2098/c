@@ -10,15 +10,16 @@ SDL_Window* window;
 SDL_Surface* surface;
 
 //Definitons. read the readme please.
-#define WIDTH 2256 //Keeping these next 4 in ratios of each other is ideal! (8s=w)
-#define HEIGHT 160
-#define WWIDTH 282
-#define WHEIGHT 20
-#define RENDER_FRAMERATE 60
-#define PHYSICS_SUBSTEPS 30000
-#define DIGITS 7
-#define SPEED 5
-#define RENDERGRID 1
+//These are now loaded from config.txt
+int WIDTH;           //Keeping these next 4 in ratios of each other is ideal! (8s=w)
+int HEIGHT;
+int WWIDTH;
+int WHEIGHT;
+int RENDER_FRAMERATE;
+int PHYSICS_SUBSTEPS;
+int DIGITS;
+int SPEED;
+int RENDERGRID;
 //Structures
 struct v2d { // Vector 2d, used for all sorts of 2d values.
   long double x;
@@ -37,14 +38,14 @@ struct box{// Box struct, self explanatory
   uint32_t color;// Stores the color of the box :)
 };
 
-
+void setAttributes();
 //Rendering functions
 struct v2di pixl(long double x, long double y); //outputs a pixel from a workspace coordinate
 void pixel(int x, int y, uint32_t color);// Draws a pixel onscreen
 uint32_t rgb(uint8_t r, uint8_t g, uint8_t b);//converts r g b to a uint32 for sdl.
 void renderUnitGrid();//Function to actually render the unit grid.
 void drawBox(struct box *target);//Self explanatory
-void drawStraightLine(struct v2di start, struct v2di end, uint32_t color)//Also self explanatory
+void drawStraightLine(struct v2di start, struct v2di end, uint32_t color);//Also self explanatory
 
 //Movement and physics functions
 void step(struct box *box1, struct box *box2);//Physics collider
@@ -62,6 +63,8 @@ int done;
 
 //BEGIN PROGRAM EXEC
 int main() {
+  //First read all the configs from the config file!
+  setAttributes();
   SDL_Init(SDL_INIT_VIDEO);//Open a video channel.
   XSCALE = WIDTH/WWIDTH;//Calculate X and Y scale variables.
   YSCALE = HEIGHT/WHEIGHT;
@@ -74,7 +77,7 @@ int main() {
   //Base box
   struct box base;
   base.mass = 1;
-  base.position.x = 30;  base.position.y = WHEIGHT-2;
+  base.position.x = round(WWIDTH/4);  base.position.y = WHEIGHT-2;
   base.size.x = 2.0;     base.size.y = 2.0;
   base.velocity.x = 0.0; base.velocity.y = 0.0;
   base.color = rgb(255,128,128);
@@ -88,7 +91,7 @@ int main() {
   printf("Working on it...\n\n");
   //Finish the second box.
   initial.mass = setMass;
-  initial.position.x = 40;     initial.position.y = WHEIGHT-3.5;
+  initial.position.x = round(WWIDTH/3);     initial.position.y = WHEIGHT-3.5;
   initial.size.x = 3.5;        initial.size.y = 3.5;
   initial.velocity.x = -SPEED; initial.velocity.y = 0.0;
   initial.color = rgb(255,0,255);
@@ -123,7 +126,38 @@ int main() {
   }
   SDL_DestroyWindow(window);//Kill the window
   SDL_Quit();//Stop SDL
-  printf("Finished! %i collisions",coll);//And print Pi!
+  printf("Finished!\033[35m %i total collisions\033[0m",coll);//And print Pi!
+}
+//Helper function to set all the global variables.
+void setAttributes(){
+  FILE *fptr;
+  fptr = fopen("config.txt", "r"); 
+  if(fptr != NULL) {
+    char currentLine[50];//Create a current line variable.
+    while(fgets(currentLine,50,fptr)){
+      char key[50];char value[50];
+      int keyIdx = 0;int valueIdx = 0;int idx = 0;
+      while(currentLine[idx] != '=' && currentLine[idx] != '\0'){
+        key[keyIdx++] = currentLine[idx++];
+      }
+      key[keyIdx] = '\0';
+      if(currentLine[idx] == '=') idx++;
+      while(idx < 50 && currentLine[idx] != '\n' && currentLine[idx] != '\0'){
+        value[valueIdx++] = currentLine[idx++];
+      }
+      value[valueIdx] = '\0';
+      if(strcmp(key, "WIDTH") == 0) WIDTH = atoi(value);
+      else if(strcmp(key, "HEIGHT") == 0) HEIGHT = atoi(value);
+      else if(strcmp(key, "WWIDTH") == 0) WWIDTH = atoi(value);
+      else if(strcmp(key, "WHEIGHT") == 0) WHEIGHT = atoi(value);
+      else if(strcmp(key, "RENDER_FRAMERATE") == 0) RENDER_FRAMERATE = atoi(value);
+      else if(strcmp(key, "PHYSICS_SUBSTEPS") == 0) PHYSICS_SUBSTEPS = atoi(value);
+      else if(strcmp(key, "DIGITS") == 0) DIGITS = atoi(value);
+      else if(strcmp(key, "SPEED") == 0) SPEED = atoi(value);
+      else if(strcmp(key, "RENDERGRID") == 0) RENDERGRID = atoi(value);
+    }
+    fclose(fptr);
+  }
 }
 double distance(struct v2d *pos1, struct v2d *pos2){
   //Pythagorean Theorum. Self explanatory
