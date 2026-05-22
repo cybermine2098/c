@@ -25,7 +25,27 @@ This comment details that this system depends on the pythagorean theorum, one th
 
 ## How to use
 
-### Definitions:
+### Controls and configs:
+In the simulation, when tabbed into the WINDOW, you can use the following controls:
+
+<table>
+    <thead><th>Control</th></th>purpose</th></thead>
+    <tbody>
+        <tr>
+            <td>Space</td>
+            <td>Warp speed (you will see a visual indicator)</td>
+        </tr>
+        <tr>
+            <td>Left Arrow</td>
+            <td>Slow down warp</td>
+        </tr>
+        <tr>
+            <td>Right arrow</td>
+            <td>Speed up warp</td>
+        </tr>
+    </tbody>
+</table>
+
 
 In the config file (`config.txt`) there are many attributes, this is what they all do
 
@@ -70,6 +90,10 @@ In the config file (`config.txt`) there are many attributes, this is what they a
         <tr>
             <td>RENDERGRID</td>
             <td>Sets if the workspace grid is rendered or not. 0 -> false | 1-> true</td>
+        </tr>
+        <tr>
+            <td>ENABLESOUND</td>
+            <td>For added experience, you can enable sounds. This isn't sim-accurate, since an elastic collision is produces no sound, but it's fun to hear. </td>
         </tr>
     </tbody>
 </table>

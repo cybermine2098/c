@@ -1,5 +1,6 @@
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -20,6 +21,7 @@ int PHYSICS_SUBSTEPS;
 int DIGITS;
 int SPEED;
 int RENDERGRID;
+int ENABLESOUND;
 //Structures
 struct v2d { // Vector 2d, used for all sorts of 2d values.
   long double x;
@@ -44,12 +46,13 @@ struct v2di pixl(long double x, long double y); //outputs a pixel from a workspa
 void pixel(int x, int y, uint32_t color);// Draws a pixel onscreen
 uint32_t rgb(uint8_t r, uint8_t g, uint8_t b);//converts r g b to a uint32 for sdl.
 void renderUnitGrid();//Function to actually render the unit grid.
+void renderWarpEffect();//Function used to show when the simulation is warping, and by how much.
 void drawBox(struct box *target);//Self explanatory
 void drawStraightLine(struct v2di start, struct v2di end, uint32_t color);//Also self explanatory
 
 //Movement and physics functions
-void step(struct box *box1, struct box *box2);//Physics collider
-void move(struct box *b);//
+void step(struct box *box1, struct box *box2, int steps, Mix_Chunk *hitSound);//Physics collider
+void move(struct box *b, int steps, Mix_Chunk *hitSound);//
 
 //Global Vars
 long double XSCALE;
@@ -60,6 +63,8 @@ int coll;
 bool quit;
 int frame;
 int done;
+int space;
+int warpSpeed;
 
 //BEGIN PROGRAM EXEC
 int main() {
@@ -71,7 +76,9 @@ int main() {
   window = SDL_CreateWindow("Computing Pi with colliding blocks", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);//Create a video
   surface = SDL_GetWindowSurface(window);//And be able to write to it.
   pixels = (uint32_t*)surface->pixels;//Set the pixels to a pointer of the surface pixels. 
-
+  //Start audio engine
+  Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 512);
+  Mix_Chunk *hitSound = Mix_LoadWAV("./hit.wav");
   //Create and format boxes.
 
   //Base box
@@ -96,18 +103,42 @@ int main() {
   initial.velocity.x = -SPEED; initial.velocity.y = 0.0;
   initial.color = rgb(255,0,255);
   //initialize some sim variables.
-  quit = false;frame = 0;done = 0;SDL_Event e;
+  quit = false;frame = 0;done = 0;SDL_Event e;space=0;warpSpeed = 5;
   //And run the sim!
   while (!quit) {
     while (SDL_PollEvent(&e)) {//Check if the window was closed or ctrl+c pressed.
-      if (e.type == SDL_QUIT) {
-        quit = true;
+      switch(e.type){
+        case SDL_QUIT:
+          quit=true;
+          break;
+        case SDL_KEYDOWN:
+        case SDL_KEYUP:
+          const char * keyName = SDL_GetKeyName(e.key.keysym.sym);
+          if(e.key.type == SDL_KEYDOWN){
+            if(strcmp(keyName,"Space") == 0){
+              space = !space;
+              space ? printf("Warping...\n"):printf("Resuming...\n");
+            }
+            if(!space)break;
+            if(strcmp(keyName,"Left")== 0){
+              warpSpeed > 1 ? warpSpeed--:0;
+              printf("Warp speed: %i\n", warpSpeed);
+            }
+            if(strcmp(keyName,"Right")==0){
+              warpSpeed < 100 ? warpSpeed++:0;
+              printf("Warp speed: %i\n", warpSpeed);
+            }
+          }
+          break;
+        default:
+          break;
       }
     }
     if (SDL_LockSurface(surface) == 0) {//If the surface is ready to be locked (EG not resizing, etc)
       memset(pixels, 0, sizeof(uint32_t) * WIDTH * HEIGHT);//First clear the whole screen and set pixels to black
       //render START
       RENDERGRID ? renderUnitGrid() : 0;//If render grid is enabled, do that first since it's the background.
+      renderWarpEffect();
       drawBox(&base);// Lets draw the base box. See the function definition for more.
       drawBox(&initial);// And the heavy box
       //RENDER END
@@ -118,7 +149,7 @@ int main() {
     frame++;//Increment frame counter;
     //Physics simulation START
     for(int substep = 0; substep < PHYSICS_SUBSTEPS; substep++){//Now take the number of physics steps
-      step(&base,&initial);//See function definition.
+      step(&base,&initial,PHYSICS_SUBSTEPS,hitSound);//See function definition.
     }
     if(done > 0 && done + (RENDER_FRAMERATE) <= frame){//If the "win condition" was set 1 sec ago, quit the program on next loop.
       quit = true;
@@ -126,6 +157,8 @@ int main() {
   }
   SDL_DestroyWindow(window);//Kill the window
   SDL_Quit();//Stop SDL
+  Mix_FreeChunk(hitSound);//Free up the hit sound
+  Mix_CloseAudio();//Close the audio channel.
   //And print Pi!
   printf("\033[35m%i total collisions\033[0m\n",coll);                      
   //This is the formula for the number of expected collisions
@@ -159,6 +192,7 @@ void setAttributes(){
       else if(strcmp(key, "DIGITS") == 0) DIGITS = atoi(value);
       else if(strcmp(key, "SPEED") == 0) SPEED = atoi(value);
       else if(strcmp(key, "RENDERGRID") == 0) RENDERGRID = atoi(value);
+      else if(strcmp(key, "ENABLESOUND") == 0) ENABLESOUND = atoi(value);
     }
     fclose(fptr);
   }
@@ -182,6 +216,15 @@ void renderUnitGrid(){
     drawStraightLine(s,e,rgb(0,0,100));
   }
 }
+void renderWarpEffect(){
+  if(!space)return;
+  for(int x = 0; x < WIDTH; x++){
+    for(int y = 0; y < HEIGHT; y++){
+      const bool isTop = y < 127;
+      pixel(x, y, rgb(isTop ? 255-y*2 : 0, 0, (int)((double)warpSpeed*3)));
+    }
+  }
+}
 //Writes a pixel. Finds its offset and writes it. Simple.
 void pixel(int x, int y, uint32_t color) {
   if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
@@ -199,7 +242,7 @@ struct v2di pixl(long double x, long double y){
   return loc;
 };
 //Does a physics step.
-void step(struct box *box1, struct box *box2){
+void step(struct box *box1, struct box *box2, int steps, Mix_Chunk *hitSound){
   //Step 1: See if any collisions need to be made, using radial cast.
   if(distance(&(box1->position),&(box2->position)) <= box1->size.x+box2->size.x){
     //Elastic collision: exchange velocities based on mass
@@ -212,25 +255,27 @@ void step(struct box *box1, struct box *box2){
     box1->velocity.x = ((m1 - m2) * v1 + 2 * m2 * v2) / (m1 + m2);
     box2->velocity.x = ((m2 - m1) * v2 + 2 * m1 * v1) / (m1 + m2);
     coll++;
+    ENABLESOUND ? Mix_PlayChannel(-1, hitSound, 0):0; 
   }
   //Move both boxes
-  move(box1);
-  move(box2);
+  move(box1,steps,hitSound);
+  move(box2,steps,hitSound);
   if(box1->velocity.x >= 0 && box1->velocity.x < box2->velocity.x && box2->velocity.x >= 0 && done == 0){//win condition
     done = frame;
     printf("Reached final conditon, stopping in 1sec...\n");
   }
 }
 //use to move a box.
-void move(struct box *b){
-  const long double physics_fps = (long double)RENDER_FRAMERATE * PHYSICS_SUBSTEPS;// convert to wu/physs
+void move(struct box *b, int steps, Mix_Chunk *hitSound){
+  const long double physics_fps = (long double)RENDER_FRAMERATE * steps;// convert to wu/physs
   const long double xscaled = (b->velocity.x)/physics_fps;// conver to wu/s
   const long double yscaled = (b->velocity.y)/physics_fps;
-  b->position.x += xscaled;
-  b->position.y += yscaled;
+  b->position.x += xscaled*(space ? warpSpeed:1);
+  b->position.y += yscaled*(space ? warpSpeed:1);
   if(b->position.x-b->size.x <= 0){//bounce off the left side of the screen.
     b->velocity.x = -(b->velocity.x);//Invert the velocity
     coll++;//This also counts as a collision.
+    ENABLESOUND ? Mix_PlayChannel(-1, hitSound, 0):0; 
   }
 }
 //Draws a box on screen!
