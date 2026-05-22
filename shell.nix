@@ -5,6 +5,5 @@ pkgs.mkShell {
     gcc
     pkg-config
     SDL2
-    SDL2_ttf
   ];
 }

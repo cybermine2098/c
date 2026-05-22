@@ -126,7 +126,10 @@ int main() {
   }
   SDL_DestroyWindow(window);//Kill the window
   SDL_Quit();//Stop SDL
-  printf("Finished!\033[35m %i total collisions\033[0m",coll);//And print Pi!
+  //And print Pi!
+  printf("\033[35m%i total collisions\033[0m\n",coll);                      
+  //This is the formula for the number of expected collisions
+  printf("\033[34m%i expected collisions\033[0m",(int)(sqrt(setMass)*M_PI));
 }
 //Helper function to set all the global variables.
 void setAttributes(){
