@@ -29,7 +29,10 @@ This comment details that this system depends on the pythagorean theorum, one th
 In the simulation, when tabbed into the WINDOW, you can use the following controls:
 
 <table>
-    <thead><th>Control</th></th>purpose</th></thead>
+    <thead>
+        <th>Control</th>
+        <th>Purpose</th>
+    </thead>
     <tbody>
         <tr>
             <td>Space</td>
