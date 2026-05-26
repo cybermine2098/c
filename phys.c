@@ -1,4 +1,5 @@
 #define SDL_MAIN_HANDLED
+#include <unistd.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 #include <string.h>
@@ -22,6 +23,8 @@ int DIGITS;
 int SPEED;
 int RENDERGRID;
 int ENABLESOUND;
+
+bool isTTY;
 //Structures
 struct v2d { // Vector 2d, used for all sorts of 2d values.
   long double x;
@@ -68,6 +71,7 @@ int warpSpeed;
 
 //BEGIN PROGRAM EXEC
 int main() {
+  isTTY = 0;//isatty(1);
   //First read all the configs from the config file!
   setAttributes();
   SDL_Init(SDL_INIT_VIDEO);//Open a video channel.
@@ -93,9 +97,9 @@ int main() {
   struct box initial;
   const long int setMass = pow(100,(DIGITS-1));//How much mass should the second box have?
   //Some logging info:
-  printf("Using block mass: %lukg\n",setMass);
-  printf("Calculating %i Physics Steps / second\n",PHYSICS_SUBSTEPS*RENDER_FRAMERATE);
-  printf("Working on it...\n\n");
+  isTTY ? printf("Using block mass: %lukg\n",setMass) : 0;
+  isTTY ? printf("Calculating %i Physics Steps / second\n",PHYSICS_SUBSTEPS*RENDER_FRAMERATE) : 0;
+  isTTY ? printf("Working on it...\n\n") : 0;
   //Finish the second box.
   initial.mass = setMass;
   initial.position.x = round(WWIDTH/3);     initial.position.y = WHEIGHT-3.5;
@@ -160,9 +164,10 @@ int main() {
   Mix_FreeChunk(hitSound);//Free up the hit sound
   Mix_CloseAudio();//Close the audio channel.
   //And print Pi!
-  printf("\033[35m%i total collisions\033[0m\n",coll);                      
+  isTTY ? printf("\033[35m%i total collisions\033[0m\n",coll) : printf("%i ",coll);                      
   //This is the formula for the number of expected collisions
-  printf("\033[34m%i expected collisions\033[0m",(int)(sqrt(setMass)*M_PI));
+  const int expected = (int)(sqrt(setMass)*M_PI);
+  isTTY ? printf("\033[34m%i expected collisions\033[0m",expected) : printf("%i", expected);
 }
 //Helper function to set all the global variables.
 void setAttributes(){
@@ -262,7 +267,7 @@ void step(struct box *box1, struct box *box2, int steps, Mix_Chunk *hitSound){
   move(box2,steps,hitSound);
   if(box1->velocity.x >= 0 && box1->velocity.x < box2->velocity.x && box2->velocity.x >= 0 && done == 0){//win condition
     done = frame;
-    printf("Reached final conditon, stopping in 1sec...\n");
+    isTTY ? printf("Reached final conditon, stopping in 1sec...\n") :0;
   }
 }
 //use to move a box.

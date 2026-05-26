@@ -107,9 +107,13 @@ In the config file (`config.txt`) there are many attributes, this is what they a
 
 All major desktop OSes:
 
-        ./phys
+    ./phys
 
 To edit the simulation variables see `config.txt`.
+
+The program will check for a TTY and will enable extended outputting if this is the case. If there is no TTY output, it will output the following format for test cases.
+
+    total | expected
 
 ### Compiling
 
